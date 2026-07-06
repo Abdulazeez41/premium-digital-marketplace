@@ -1,0 +1,402 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum ProductType {
+  EBOOK
+  AUDIOBOOK
+  WORKBOOK
+  COURSE
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum ProductMediaRole {
+  COVER
+  GALLERY
+  PREVIEW
+  DOWNLOAD
+}
+
+model User {
+  id                  String                   @id @default(cuid())
+  name                String
+  email               String                   @unique
+  passwordHash        String
+  role                UserRole                 @default(CUSTOMER)
+  avatarUrl           String?
+  emailVerifiedAt     DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  orders              Order[]
+  downloads           Download[]
+  lessonProgress      LessonProgress[]
+  courseProgress      CourseProgress[]
+  auditLogs           AuditLog[]
+  mediaUploads        Media[]                  @relation("MediaUploadedBy")
+  emailTokens         EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  authAttempts        AuthAttempt[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  ipAddress String
+  email     String?
+  action    String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([ipAddress, action, createdAt])
+  @@index([email, action, createdAt])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String
+  imageUrl    String?
+  type        ProductType?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model Product {
+  id                  String          @id @default(cuid())
+  title               String
+  slug                String          @unique
+  excerpt             String
+  description         String
+  features            Json
+  type                ProductType
+  status              ProductStatus   @default(DRAFT)
+  sku                 String          @unique
+  priceCents          Int
+  compareAtPriceCents Int?
+  currency            String          @default("NGN")
+  seoTitle            String?
+  seoDescription      String?
+  featured            Boolean         @default(false)
+  popularScore        Int             @default(0)
+  publishedAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  categoryId          String
+  category            Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems          OrderItem[]
+  downloads           Download[]
+  course              Course?
+  productMedia        ProductMedia[]
+
+  @@index([type, status, featured])
+  @@index([categoryId, status])
+}
+
+model Course {
+  id              String           @id @default(cuid())
+  productId       String           @unique
+  difficulty      String
+  durationMinutes Int
+  trailerUrl      String?
+  outcomes        Json
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lessons         Lesson[]
+  progress        CourseProgress[]
+}
+
+model Lesson {
+  id               String           @id @default(cuid())
+  courseId         String
+  title            String
+  slug             String
+  description      String
+  content          String
+  videoUrl         String
+  durationMinutes  Int
+  position         Int
+  isPreview        Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonProgress   LessonProgress[]
+
+  @@unique([courseId, slug])
+  @@unique([courseId, position])
+}
+
+model CourseProgress {
+  id               String    @id @default(cuid())
+  userId           String
+  courseId         String
+  completedLessons Int       @default(0)
+  completionRate   Float     @default(0)
+  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id                  String    @id @default(cuid())
+  userId              String
+  lessonId            String
+  completedAt         DateTime?
+  lastPositionSeconds Int       @default(0)
+  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime  @default(now())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson              Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+model Order {
+  id                 String        @id @default(cuid())
+  userId             String
+  status             OrderStatus   @default(PENDING)
+  subtotalCents      Int
+  discountCents      Int           @default(0)
+  totalCents         Int
+  currency           String        @default("NGN")
+  couponCode         String?
+  paystackReference  String?       @unique
+  billingName        String
+  billingEmail       String
+  billingPhone       String
+  billingAddressJson Json
+  paymentVerifiedAt  DateTime?
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items              OrderItem[]
+  payments           Payment[]
+  downloads          Download[]
+
+  @@index([userId, status, createdAt])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  productId     String
+  titleSnapshot String
+  priceCents    Int
+  createdAt     DateTime @default(now())
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, productId])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  orderId          String
+  provider         String
+  reference        String        @unique
+  transactionId    String?
+  amountCents      Int
+  currency         String        @default("NGN")
+  status           PaymentStatus @default(INITIALIZED)
+  paidAt           DateTime?
+  rawPayload       Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+}
+
+model Download {
+  id               String   @id @default(cuid())
+  userId           String
+  productId        String
+  orderId          String
+  mediaId          String
+  downloadCount    Int      @default(0)
+  lastDownloadedAt DateTime?
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  media            Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, mediaId])
+}
+
+model Coupon {
+  id               String      @id @default(cuid())
+  code             String      @unique
+  description      String?
+  type             CouponType
+  value            Int
+  maxDiscountCents Int?
+  minOrderCents    Int?
+  usageLimit       Int?
+  usedCount        Int         @default(0)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  active           Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model HomepageContent {
+  id         String        @id @default(cuid())
+  key        String        @unique
+  title      String
+  content    Json
+  status     ContentStatus @default(PUBLISHED)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  company    String?
+  quote      String
+  rating     Int      @default(5)
+  avatarUrl  String?
+  featured   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Faq {
+  id         String   @id @default(cuid())
+  question   String
+  answer     String
+  category   String?
+  sortOrder  Int      @default(0)
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Media {
+  id           String         @id @default(cuid())
+  fileName     String
+  storageKey   String         @unique
+  url          String
+  mimeType     String
+  kind         MediaKind
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  altText      String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  uploadedById String?
+  uploadedBy   User?          @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  productMedia ProductMedia[]
+  downloads    Download[]
+}
+
+model ProductMedia {
+  id         String           @id @default(cuid())
+  productId  String
+  mediaId    String
+  role       ProductMediaRole
+  sortOrder  Int              @default(0)
+  isPrimary  Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  product    Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media      Media            @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([productId, role, sortOrder])
+}
+
+model SiteSetting {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+}
