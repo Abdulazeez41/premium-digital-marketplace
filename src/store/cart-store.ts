@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { CartItemInput } from "@/types";
 
@@ -13,36 +13,42 @@ type CartStore = {
   clearCart: () => void;
 };
 
+const normalizeItem = (item: CartItemInput): CartItemInput => ({
+  ...item,
+  quantity: 1,
+});
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
       addItem: (item) => {
+        const normalizedItem = normalizeItem(item);
         const existing = get().items.find(
-          (entry) => entry.productId === item.productId,
+          (entry) => entry.productId === normalizedItem.productId,
         );
+
         if (existing) {
           set({
             items: get().items.map((entry) =>
-              entry.productId === item.productId
-                ? { ...entry, quantity: entry.quantity + item.quantity }
+              entry.productId === normalizedItem.productId
+                ? { ...entry, ...normalizedItem, quantity: 1 }
                 : entry,
             ),
           });
           return;
         }
-        set({ items: [...get().items, item] });
+
+        set({ items: [...get().items, normalizedItem] });
       },
       removeItem: (productId) =>
         set({
           items: get().items.filter((item) => item.productId !== productId),
         }),
-      updateQuantity: (productId, quantity) =>
+      updateQuantity: (productId) =>
         set({
           items: get().items.map((item) =>
-            item.productId === productId
-              ? { ...item, quantity: Math.max(1, quantity) }
-              : item,
+            item.productId === productId ? { ...item, quantity: 1 } : item,
           ),
         }),
       clearCart: () => set({ items: [] }),
@@ -50,15 +56,20 @@ export const useCartStore = create<CartStore>()(
     {
       name: "premium-marketplace-cart",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        items: state.items.map(normalizeItem),
+      }),
     },
   ),
 );
 
 export function useCartTotals() {
   const items = useCartStore((state) => state.items);
-  const subtotalCents = items.reduce(
+  const normalizedItems = items.map(normalizeItem);
+  const subtotalCents = normalizedItems.reduce(
     (sum, item) => sum + item.priceCents * item.quantity,
     0,
   );
-  return { items, subtotalCents };
+
+  return { items: normalizedItems, subtotalCents };
 }

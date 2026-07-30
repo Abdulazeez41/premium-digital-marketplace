@@ -8,6 +8,7 @@ import { fail, ok } from "@/lib/http";
 import { getClientIp } from "@/lib/request";
 import { hashPassword } from "@/lib/auth/password";
 import { assertAuthRateLimit, recordAuthAttempt } from "@/lib/auth/rate-limit";
+import { getEnv } from "@/lib/env";
 import { registerSchema } from "@/lib/validators/auth";
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,18 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message || "Invalid request.", 400);
+  }
+
+  // Validate mail settings before writing the user. Otherwise an invalid
+  // MAIL_FROM value creates an account, then fails while sending its email;
+  // a retry misleadingly receives the duplicate-account 409 response.
+  try {
+    getEnv();
+  } catch {
+    return fail(
+      "Registration is temporarily unavailable because email is not configured correctly.",
+      503,
+    );
   }
 
   try {

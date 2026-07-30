@@ -5,7 +5,7 @@ export type CartItemInput = {
   coverImage: string;
   priceCents: number;
   type: "EBOOK" | "AUDIOBOOK" | "WORKBOOK" | "COURSE";
-  quantity: number;
+  quantity: 1;
 };
 
 export type BillingAddress = {

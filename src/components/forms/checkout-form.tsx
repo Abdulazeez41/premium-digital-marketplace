@@ -19,7 +19,7 @@ import { useCartStore, useCartTotals } from "@/store/cart-store";
 export function CheckoutForm({ reference }: { reference?: string }) {
   const clearCart = useCartStore((state) => state.clearCart);
   const { items, subtotalCents } = useCartTotals();
-  const form = useForm<z.infer<typeof checkoutSchema>>({
+  const form = useForm<z.input<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       items,
@@ -42,7 +42,7 @@ export function CheckoutForm({ reference }: { reference?: string }) {
   }, [form, items]);
 
   const initializeMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof checkoutSchema>) => {
+    mutationFn: async (values: z.input<typeof checkoutSchema>) => {
       const response = await fetch("/api/checkout/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

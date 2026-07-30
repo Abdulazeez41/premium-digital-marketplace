@@ -15,14 +15,21 @@ export function AddToCartButton({
   iconOnly?: boolean;
 }) {
   const addItem = useCartStore((state) => state.addItem);
+  const existingItem = useCartStore((state) =>
+    state.items.find((entry) => entry.productId === item.productId),
+  );
 
   return (
     <Button
       type="button"
       size={iconOnly ? "icon" : "default"}
       onClick={() => {
-        addItem(item);
-        toast.success(`${item.title} added to cart.`);
+        addItem({ ...item, quantity: 1 });
+        toast.success(
+          existingItem
+            ? `${item.title} is already in your cart.`
+            : `${item.title} added to cart.`,
+        );
       }}
       aria-label={`Add ${item.title} to cart`}
     >

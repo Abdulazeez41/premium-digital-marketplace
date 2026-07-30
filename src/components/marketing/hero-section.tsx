@@ -158,7 +158,7 @@ export function HeroSection({
             <span className="flex h-1.5 w-1.5">
               <span className="h-full w-full animate-ping rounded-full bg-[#7A1F2B]/60" />
             </span>
-            <span>Now enrolling —</span>
+            <span>Now enrolling -</span>
             <div className="relative h-5 overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.span
@@ -176,7 +176,7 @@ export function HeroSection({
           </motion.div>
         </motion.div>
 
-        {/* RIGHT: the index-card / ticket — signature element */}
+        {/* RIGHT: the index-card / ticket - signature element */}
         <motion.div
           initial={{ opacity: 0, y: 30, rotate: -2 }}
           animate={{ opacity: 1, y: 0, rotate: 0 }}

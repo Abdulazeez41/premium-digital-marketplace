@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getHomepageCollection } from "@/lib/services/catalog";
 import { formatPrice } from "@/lib/utils";
 
-// mono index — used sparingly, only where content is genuinely enumerable
+// mono index - used sparingly, only where content is genuinely enumerable
 const idx = (n: number) => String(n).padStart(2, "0");
 type HomepageCollection = Awaited<ReturnType<typeof getHomepageCollection>> & {
   featuredCourse: any;
@@ -47,7 +47,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* categories — styled as catalogue entries */}
+      {/* categories - styled as catalogue entries */}
       <section className="bg-white py-20">
         <Container className="space-y-10">
           <SectionHeading
@@ -64,7 +64,7 @@ export default async function HomePage() {
               >
                 <div className="flex items-start justify-between">
                   <span className="font-mono text-[11px] tracking-[0.18em] text-[#B7A896]">
-                    {idx(i + 1)} —
+                    {idx(i + 1)} -
                   </span>
                   <Badge>{category.type || "All products"}</Badge>
                 </div>
@@ -102,7 +102,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* featured course — reframed as a case-file / dossier */}
+      {/* featured course - reframed as a case-file / dossier */}
       {data.featuredCourse ? (
         <section className="bg-white py-20">
           <Container>
@@ -172,7 +172,7 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* why choose us — mono index instead of generic checkmark */}
+      {/* why choose us - mono index instead of generic checkmark */}
       <section className="py-20">
         <Container className="space-y-10">
           <SectionHeading
@@ -203,7 +203,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* testimonials — index-card treatment, echoing the hero ticket */}
+      {/* testimonials - index-card treatment, echoing the hero ticket */}
       <section className="bg-white py-20">
         <Container className="space-y-10">
           <SectionHeading
@@ -240,12 +240,12 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* newsletter — styled as a subscription ticket */}
+      {/* newsletter - styled as a subscription ticket */}
       <section className="py-20">
         <Container className="grid gap-10 rounded-[4px] border border-[#E4D9CE] bg-[#F4EBED] p-8 lg:grid-cols-[0.9fr_1.1fr] lg:p-10">
           <div className="space-y-4">
             <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[#7A1F2B]">
-              Dispatch — Weekly
+              Dispatch - Weekly
             </span>
             <SectionHeading
               eyebrow=""

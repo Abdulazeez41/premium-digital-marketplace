@@ -9,7 +9,24 @@ import { computeDiscountCents } from "@/lib/payments/helpers";
 import { createReference } from "@/lib/utils";
 import type { CheckoutPayload } from "@/types";
 
+function assertSingleLicenseCart(payload: CheckoutPayload) {
+  const uniqueProductIds = new Set(payload.items.map((item) => item.productId));
+
+  if (uniqueProductIds.size !== payload.items.length) {
+    throw new Error("Duplicate products are not allowed in checkout.");
+  }
+
+  const invalidQuantityItem = payload.items.find((item) => item.quantity !== 1);
+  if (invalidQuantityItem) {
+    throw new Error(
+      "Digital products can only be purchased as a single license.",
+    );
+  }
+}
+
 export async function buildValidatedCart(payload: CheckoutPayload) {
+  assertSingleLicenseCart(payload);
+
   const products = await db.product.findMany({
     where: {
       id: { in: payload.items.map((item) => item.productId) },

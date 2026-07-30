@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCartStore, useCartTotals } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
+import { useCartStore, useCartTotals } from "@/store/cart-store";
 
 export function CartView() {
   const { items, subtotalCents } = useCartTotals();
   const removeItem = useCartStore((state) => state.removeItem);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
 
   if (!items.length) {
     return (
@@ -57,33 +56,15 @@ export function CartView() {
                 </div>
               </div>
               <div className="flex items-center gap-3 self-start sm:self-center">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#ECECEC] px-2 py-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity - 1)
-                    }
-                    className="rounded-full p-2 hover:bg-[#F4F4F5]"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="min-w-8 text-center text-sm font-medium">
-                    {item.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity + 1)
-                    }
-                    className="rounded-full p-2 hover:bg-[#F4F4F5]"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#ECECEC] bg-[#FAFAFA] px-4 py-2 text-sm font-medium text-[#1F1F1F]">
+                  <ShieldCheck className="h-4 w-4 text-[#7A1F2B]" />
+                  <span>Single license</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeItem(item.productId)}
                   className="rounded-full p-3 text-[#666666] hover:bg-[#F4F4F5]"
+                  aria-label={`Remove ${item.title} from cart`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -107,6 +88,10 @@ export function CartView() {
             <span>Delivery</span>
             <span className="font-semibold text-[#16A34A]">Instant access</span>
           </div>
+          <p className="rounded-2xl bg-[#F8F1F3] px-4 py-3 text-sm text-[#7A1F2B]">
+            Each digital product is limited to one license per checkout to
+            prevent duplicate fulfillment.
+          </p>
           <Button asChild className="w-full">
             <Link href="/checkout">Proceed to checkout</Link>
           </Button>

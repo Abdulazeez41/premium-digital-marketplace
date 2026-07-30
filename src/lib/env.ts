@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+const mailFromSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      if (z.string().email().safeParse(value).success) return true;
+
+      const displayNameAddress = value.match(/^.+\s<([^<>\s]+)>$/);
+      return Boolean(
+        displayNameAddress &&
+        z.string().email().safeParse(displayNameAddress[1]).success,
+      );
+    },
+    {
+      message:
+        "MAIL_FROM must be an email address or a display name followed by <email@example.com>.",
+    },
+  );
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
@@ -12,7 +31,9 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(1025),
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASS: z.string().optional().default(""),
-  MAIL_FROM: z.string().email(),
+  // Nodemailer accepts both `no-reply@example.com` and
+  // `Premium Marketplace <no-reply@example.com>`.
+  MAIL_FROM: mailFromSchema,
   STORAGE_DRIVER: z
     .enum(["r2", "supabase", "filesystem"])
     .default("filesystem"),

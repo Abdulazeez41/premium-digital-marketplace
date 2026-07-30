@@ -12,10 +12,20 @@ export async function POST(request: NextRequest) {
     return new Response("Invalid signature", { status: 401 });
   }
 
-  const payload = JSON.parse(rawBody) as {
+  let payload: {
     event?: string;
     data?: { reference?: string; status?: string };
   };
+
+  try {
+    payload = JSON.parse(rawBody) as {
+      event?: string;
+      data?: { reference?: string; status?: string };
+    };
+  } catch {
+    return new Response("Invalid payload", { status: 400 });
+  }
+
   if (
     payload.event !== "charge.success" ||
     payload.data?.status !== "success" ||

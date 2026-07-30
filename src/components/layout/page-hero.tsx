@@ -25,7 +25,7 @@ export function PageHero({
         <div className="flex items-center gap-3">
           {index ? (
             <span className="font-mono text-xs tracking-[0.18em] text-[#B7A896]">
-              {index} —
+              {index} -
             </span>
           ) : null}
           {eyebrow ? (

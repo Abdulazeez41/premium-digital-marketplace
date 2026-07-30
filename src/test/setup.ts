@@ -1,5 +1,5 @@
 process.env.DATABASE_URL ??=
-  "postgresql://postgres:postgres@localhost:5432/premium_marketplace_test";
+  "postgresql://neondb_owner:npg_yBWL0ZI8njOf@ep-sparkling-wildflower-aheq892y-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 process.env.NEXT_PUBLIC_APP_URL ??= "http://localhost:3000";
 process.env.NEXT_PUBLIC_CURRENCY ??= "NGN";
 process.env.JWT_SECRET ??=
