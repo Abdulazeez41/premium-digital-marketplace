@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
     return fail(parsed.error.issues[0]?.message || "Invalid request.", 400);
   }
 
-  // Validate mail settings before writing the user. Otherwise an invalid
-  // MAIL_FROM value creates an account, then fails while sending its email;
-  // a retry misleadingly receives the duplicate-account 409 response.
+  let createdUserId: string | undefined;
+  let verificationEmailSent = false;
+
   try {
     getEnv();
   } catch {
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         passwordHash: await hashPassword(parsed.data.password),
       },
     });
+    createdUserId = user.id;
 
     const token = crypto.randomUUID();
     await db.emailVerificationToken.create({
@@ -59,25 +60,37 @@ export async function POST(request: NextRequest) {
     });
 
     await sendVerificationEmail(user.email, token);
+    verificationEmailSent = true;
     await recordAuthAttempt({
       ipAddress,
       action: "register",
       email: user.email,
       success: true,
       userId: user.id,
-    });
+    }).catch(() => undefined);
 
     return ok({ id: user.id });
-  } catch (error) {
+  } catch {
+    if (createdUserId && !verificationEmailSent) {
+      await db.user
+        .delete({ where: { id: createdUserId } })
+        .catch(() => undefined);
+    }
+
     await recordAuthAttempt({
       ipAddress,
       action: "register",
       email: parsed.data.email,
       success: false,
-    });
-    return fail(
-      error instanceof Error ? error.message : "Unable to create account.",
-      400,
-    );
+    }).catch(() => undefined);
+
+    if (createdUserId && !verificationEmailSent) {
+      return fail(
+        "We couldn't send the verification email. Please try again later.",
+        503,
+      );
+    }
+
+    return fail("Unable to create account.", 400);
   }
 }

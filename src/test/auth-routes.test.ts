@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     user: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
       update: vi.fn(),
     },
     emailVerificationToken: {
@@ -179,6 +180,38 @@ describe("auth API routes", () => {
         "Registration is temporarily unavailable because email is not configured correctly.",
     });
     expect(mocks.db.user.create).not.toHaveBeenCalled();
+  });
+
+  it("removes a new account when sending its verification email fails", async () => {
+    mocks.db.user.findUnique.mockResolvedValue(null);
+    mocks.db.user.create.mockResolvedValue({
+      id: "user_1",
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+    });
+    mocks.db.emailVerificationToken.create.mockResolvedValue({ id: "evt_1" });
+    mocks.db.user.delete.mockResolvedValue({ id: "user_1" });
+    mocks.mailer.sendVerificationEmail.mockRejectedValue(
+      new Error("SMTP provider unavailable"),
+    );
+
+    const response = await registerPOST(
+      makeJsonRequest("http://localhost/api/auth/register", {
+        name: "Ada Lovelace",
+        email: "ada@example.com",
+        password: "StrongPass!2026",
+      }) as any,
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      message:
+        "We couldn't send the verification email. Please try again later.",
+    });
+    expect(mocks.db.user.delete).toHaveBeenCalledWith({
+      where: { id: "user_1" },
+    });
   });
 
   it("logs in a verified admin user and returns the admin redirect", async () => {
